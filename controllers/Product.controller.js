@@ -82,27 +82,43 @@ const getHomeScreenProducts = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, name, material, isActive } =
-      req.query;
+    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;
 
-    const filter = {};
+    let filter = {};
 
     if (category) filter.category = category;
     if (material) filter.material = material;
     if (isActive !== undefined) filter.isActive = isActive === "true";
     if (name) filter.name = { $regex: name, $options: "i" };
-
     if (minPrice || maxPrice) {
       filter.pricePerPack = {};
       if (minPrice) filter.pricePerPack.$gte = Number(minPrice);
       if (maxPrice) filter.pricePerPack.$lte = Number(maxPrice);
     }
 
-    const products = await ProductModel.find(filter).sort({ createdAt: -1 });
+    // Pagination setup
+    const pageNumber = Number(page) || 1;
+    const pageSize = Number(limit) || 10;
+    const skip = (pageNumber - 1) * pageSize;
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, products, "All products fetched"));
+    // If no filter is applied, filter remains empty, which fetches all products
+    const totalProducts = await ProductModel.countDocuments(filter);
+    const products = await ProductModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    return res.status(200).json(
+      new ApiResponse(200, {
+        products,
+        pagination: {
+          total: totalProducts,
+          page: pageNumber,
+          limit: pageSize,
+          totalPages: Math.ceil(totalProducts / pageSize),
+        },
+      }, "Products fetched successfully")
+    );
   } catch (error) {
     console.error("GetAllProducts Error:", error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
@@ -130,7 +146,6 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-
     const product = await ProductModel.findById(id);
     if (!product) {
       if (req.files?.length > 0) {
@@ -148,8 +163,6 @@ const updateProduct = async (req, res) => {
       } else if (Array.isArray(req.body.existingImages)) {
         existingImages = req.body.existingImages;
       }
-    } else {
-      existingImages = product.image || [];
     }
 
     let newImageUrls = [];
@@ -180,15 +193,14 @@ const updateProduct = async (req, res) => {
     product.pricePerPack = pricePerPack ?? product.pricePerPack;
     product.description = description ?? product.description;
     product.isActive = isActive ?? product.isActive;
+
     product.image = [...existingImages, ...newImageUrls];
 
     const updatedProduct = await product.save();
 
     return res
       .status(200)
-      .json(
-        new ApiResponse(200, updatedProduct, "Product updated successfully")
-      );
+      .json(new ApiResponse(200, updatedProduct, "Product updated successfully"));
   } catch (error) {
     console.error("UpdateProduct Error:", error);
     if (req.files?.length > 0) {
@@ -196,6 +208,7 @@ const updateProduct = async (req, res) => {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       });
     }
+
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
@@ -239,12 +252,11 @@ const homeScreenCount = async (req, res) => {
         },
       },
     ]);
-    console.log(counts);
     return res
       .status(200)
       .json(
         new ApiResponse(
-          200,            
+          200,
           counts[0] || { products: 0, blogs: 0 },
           "Home screen counts fetched"
         )
