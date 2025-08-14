@@ -54,7 +54,7 @@ const AdminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json(new ApiError(400, "Provide required data"));
+      return res.status(400).json(new ApiError(400, "email and password is required data"));
     }
 
     const admin = await AdminModel.findOne({ email }).lean();
@@ -152,7 +152,6 @@ const ForgotPassword = async (req, res) => {
 const UserProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    // console.log(userId);
     if (!id) {
       return res.status(400).json(new ApiError(400, "User ID is required"));
     }
@@ -172,7 +171,6 @@ const UserProfile = async (req, res) => {
 const UpdateProfile = async (req, res) => {
   try {
     const id = req.user._id;
-    console.log(id);
     const { email, name, avatar, oldPassword, newPassword } = req.body;
 
     const admin = await AdminModel.findById(id);
