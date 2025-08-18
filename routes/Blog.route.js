@@ -8,15 +8,14 @@ const { createBlog,
 const { authMiddleware } = require("../middleware/Auth.Middleware");
 const Upload = require("../middleware/Multer.middleware");
 
-// todo add auth 
 router.post(
-    "/",
+    "/", authMiddleware,
     Upload.any(),
     createBlog
 );
 router.get("/", getAllBlogs);
 router.get("/:id", getBlogById);
-router.put("/:id", Upload.any(), updateBlog);
-router.delete("/:id", deleteBlog);
+router.put("/:id", authMiddleware, Upload.any(), updateBlog);
+router.delete("/:id", authMiddleware, deleteBlog);
 
 module.exports = router;
