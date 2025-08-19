@@ -92,28 +92,33 @@ const AdminLogin = async (req, res) => {
   }
 };
 
-const SendOtp = async (req, res) => {
+const SendContactForm = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { firstName, lastName, email, phone, message } = req.body;
 
-    const admin = await AdminModel.findOne({ email });
-    if (!admin) {
-      return res.status(404).json(new ApiError(404, "Admin user not found"));
+    if (!firstName || !lastName || !email || !message) {
+      return res.status(400).json(new ApiError(400, "All required fields must be filled"));
     }
 
-    const otp = generateOTP();
+    const fullName = `${firstName} ${lastName}`;
 
     const htmlContent = `
-      <h2>OTP for Password Reset</h2>
-      <p>Hello ${admin.name},</p>
-      <p>Your OTP to reset your password is:</p>
-      <h3>${otp}</h3>
-      <p>This OTP is valid for 10 minutes.</p>
+      <h2>New Contact</h2>
+      <p><strong>Name:</strong> ${fullName}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone || "N/A"}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message}</p>
     `;
 
-    await sendMail(admin.email, "Your Password Reset OTP", htmlContent);
+    // send mail to admin (your email)
+    await sendMail(
+      process.env.ADMIN_EMAIL, // set your admin email in .env
+      "New Contact Form Submission",
+      htmlContent
+    );
 
-    return res.status(200).json(new ApiResponse(200, otp, "OTP sent to email"));
+    return res.status(200).json(new ApiResponse(200, null, "Message sent successfully"));
   } catch (error) {
     console.error(error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
@@ -237,7 +242,7 @@ const logOutUser = async (req, res) => {
 module.exports = {
   AdminLogin,
   AdminRegister,
-  SendOtp,
+  SendContactForm,
   ForgotPassword,
   UpdateProfile,
   logOutUser,

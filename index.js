@@ -6,7 +6,7 @@ const connectDB = require("./db/connection");
 const AdminUserRoute = require("./routes/AdminUser.route");
 const ProductRoute = require("./routes/Product.route");
 const BlogRoutes = require("./routes/Blog.route");
-// const ComboRoute = require("./routes/Combo.route");
+const ContactRoute = require("./routes/Contact.route");
 
 dotenv.config();
 const app = express();
@@ -25,7 +25,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/api/v1/admin", AdminUserRoute);
 app.use("/api/v1/products", ProductRoute);
-app.use("/api/v1/blogs", BlogRoutes);
+app.use("/api/v1/contact" , ContactRoute)
+// app.use("/api/v1/blogs", BlogRoutes);
 // app.use("/api/v1/combo", ComboRoute);
 
 const startServer = async () => {
