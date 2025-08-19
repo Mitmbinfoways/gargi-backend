@@ -4,7 +4,6 @@ const ContactModel = require("../models/Contact.model");
 
 const sendQuary = async (req, res) => {
   try {
-    console.log(req.body)
     const { phone, firstName, lastName, email, message } = req.body;
 
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {

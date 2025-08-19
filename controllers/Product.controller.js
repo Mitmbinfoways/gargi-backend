@@ -82,9 +82,7 @@ const getHomeScreenProducts = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;
-    
-    console.log(isActive)
+    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;    
     let filter = {};
 
     if (category) filter.category = category;
