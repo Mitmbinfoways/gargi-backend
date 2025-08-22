@@ -36,7 +36,7 @@ const createMaterial = async (req, res) => {
 
 const getAllMaterials = async (req, res) => {
     try {
-        const { search, isActive } = req.query;
+        const { search, isActive, page, limit } = req.query;
         let filter = {};
         if (search) {
             filter.name = { $regex: search, $options: "i" };
@@ -46,16 +46,33 @@ const getAllMaterials = async (req, res) => {
         } else if (isActive === "false") {
             filter.isActive = false;
         }
-        const materials = await MaterialModel.find(filter).sort({ createdAt: -1 });
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const skip = (pageNumber - 1) * pageSize;
+        const totalMaterials = await MaterialModel.countDocuments(filter);
+        const materials = await MaterialModel.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(pageSize);
 
-        return res
-            .status(200)
-            .json(new ApiResponse(200, materials, "Fetched all materials successfully"));
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    materials,
+                    pagination: {
+                        total: totalMaterials,
+                        page: pageNumber,
+                        limit: pageSize,
+                        totalPages: Math.ceil(totalMaterials / pageSize),
+                    },
+                },
+                "Fetched all materials successfully"
+            )
+        );
     } catch (error) {
         console.error("Get All Materials Error:", error);
-        return res
-            .status(500)
-            .json(new ApiError(500, "Internal Server Error"));
+        return res.status(500).json(new ApiError(500, "Internal Server Error"));
     }
 };
 

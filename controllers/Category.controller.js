@@ -27,10 +27,9 @@ const createCategory = async (req, res) => {
     }
 };
 
-
 const getAllCategories = async (req, res) => {
     try {
-        const { search, isActive } = req.query;
+        const { search, isActive, page, limit } = req.query;
         let filter = {};
         if (search) {
             filter.name = { $regex: search, $options: "i" };
@@ -40,11 +39,32 @@ const getAllCategories = async (req, res) => {
         } else if (isActive === "false") {
             filter.isActive = false;
         }
-        const categories = await CategoryModel.find(filter).sort({ createdAt: -1 });
 
-        return res
-            .status(200)
-            .json(new ApiResponse(200, categories, "Fetched categories successfully"));
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const skip = (pageNumber - 1) * pageSize;
+
+        const totalCategories = await CategoryModel.countDocuments(filter);
+
+        const categories = await CategoryModel.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(pageSize);
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    categories,
+                    pagination: {
+                        total: totalCategories,
+                        page: pageNumber,
+                        limit: pageSize,
+                        totalPages: Math.ceil(totalCategories / pageSize),
+                    },
+                },
+                "Fetched categories successfully"
+            )
+        );
     } catch (error) {
         console.error("Get All Categories Error:", error);
         return res.status(500).json(new ApiError(500, "Internal Server Error"));

@@ -12,12 +12,12 @@ const createProduct = async (req, res) => {
       material,
       size,
       quantityPerPack,
-      pricePerPack,
+      // pricePerPack,
       description,
       isActive,
     } = req.body;
 
-    if (!name || !category || !material || !quantityPerPack || !pricePerPack) {
+    if (!name || !category || !material) {
       if (req.files?.length > 0) {
         req.files.forEach((file) => {
           if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
@@ -25,7 +25,7 @@ const createProduct = async (req, res) => {
       }
       return res
         .status(400)
-        .json(new ApiError(400, "Name, Category, Material, Quantity and Price are Required"));
+        .json(new ApiError(400, "Name, Category, Material and Quantity are Required"));
     }
 
     const existingProduct = await ProductModel.findOne({
@@ -65,8 +65,8 @@ const createProduct = async (req, res) => {
       category,
       material,
       size,
-      quantityPerPack,
-      pricePerPack,
+      quantityPerPack: quantityPerPack ?? 0,
+      // pricePerPack,
       description,
       isActive,
       image: imageUrls,
@@ -105,18 +105,13 @@ const getHomeScreenProducts = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;
+    const { category, name, material, isActive, page, limit } = req.query;
     let filter = {};
 
     if (category) filter.category = category;
     if (material) filter.material = material;
     if (isActive !== undefined) filter.isActive = isActive === "true";
     if (name) filter.name = { $regex: name, $options: "i" };
-    if (minPrice || maxPrice) {
-      filter.pricePerPack = {};
-      if (minPrice) filter.pricePerPack.$gte = Number(minPrice);
-      if (maxPrice) filter.pricePerPack.$lte = Number(maxPrice);
-    }
 
     // Pagination setup
     const pageNumber = Number(page) || 1;
@@ -239,7 +234,7 @@ const updateProduct = async (req, res) => {
     product.material = material ?? product.material;
     product.size = size ?? product.size;
     product.quantityPerPack = quantityPerPack ?? product.quantityPerPack;
-    product.pricePerPack = pricePerPack ?? product.pricePerPack;
+    // product.pricePerPack = pricePerPack ?? product.pricePerPack;
     product.description = description ?? product.description;
     product.isActive = isActive ?? product.isActive;
 
@@ -261,7 +256,6 @@ const updateProduct = async (req, res) => {
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
-
 
 const deleteProduct = async (req, res) => {
   try {

@@ -22,10 +22,10 @@ const ProductModel = new mongoose.Schema({
     required: true,
     min: 1,
   },
-  pricePerPack: {
-    type: Number,
-    required: true,
-  },
+  // pricePerPack: {
+  //   type: Number,
+  //   required: true,
+  // },
   image: {
     type: [String],
   },

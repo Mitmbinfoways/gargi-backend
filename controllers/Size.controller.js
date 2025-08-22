@@ -30,7 +30,7 @@ const createSize = async (req, res) => {
 
 const getAllSizes = async (req, res) => {
     try {
-        const { search, isActive } = req.query;
+        const { search, isActive, page, limit } = req.query;
         let filter = {};
         if (search) {
             filter.name = { $regex: search, $options: "i" };
@@ -40,11 +40,30 @@ const getAllSizes = async (req, res) => {
         } else if (isActive === "false") {
             filter.isActive = false;
         }
-        const sizes = await SizeModel.find(filter).sort({ createdAt: -1 });
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const skip = (pageNumber - 1) * pageSize;
+        const totalSizes = await SizeModel.countDocuments(filter);
+        const sizes = await SizeModel.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(pageSize);
 
-        return res
-            .status(200)
-            .json(new ApiResponse(200, sizes, "Fetched all sizes successfully"));
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    sizes,
+                    pagination: {
+                        total: totalSizes,
+                        page: pageNumber,
+                        limit: pageSize,
+                        totalPages: Math.ceil(totalSizes / pageSize),
+                    },
+                },
+                "Fetched all sizes successfully"
+            )
+        );
     } catch (error) {
         console.error("Get All Sizes Error:", error);
         return res.status(500).json(new ApiError(500, "Internal Server Error"));

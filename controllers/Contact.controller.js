@@ -43,16 +43,12 @@ const sendQuary = async (req, res) => {
 
 const getAllQuarys = async (req, res) => {
   try {
-    const { search } = req.query;
-
+    const { search, page, limit } = req.query;
     let filter = {};
     if (search) {
       const searchRegex = new RegExp(search, "i");
-
       if (!isNaN(search)) {
-        filter = {
-          phone: { $regex: searchRegex },
-        };
+        filter = { phone: { $regex: searchRegex } };
       } else {
         filter = {
           $or: [
@@ -64,21 +60,36 @@ const getAllQuarys = async (req, res) => {
       }
     }
 
-    const contacts = await ContactModel.find(filter).sort({ createdAt: -1 });
+    const pageNumber = Number(page) || 1;
+    const pageSize = Number(limit) || 10;
+    const skip = (pageNumber - 1) * pageSize;
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
+    const totalContacts = await ContactModel.countDocuments(filter);
+
+    const contacts = await ContactModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
           contacts,
-          contacts.length > 0
-            ? "Contact queries fetched successfully"
-            : "No contact queries found"
-        )
-      );
+          pagination: {
+            total: totalContacts,
+            page: pageNumber,
+            limit: pageSize,
+            totalPages: Math.ceil(totalContacts / pageSize),
+          },
+        },
+        contacts.length > 0
+          ? "Contact queries fetched successfully"
+          : "No contact queries found"
+      )
+    );
   } catch (error) {
-    console.log(error);
+    console.error("GetAllQuarys Error:", error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
