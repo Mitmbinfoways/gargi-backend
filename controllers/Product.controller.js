@@ -279,10 +279,18 @@ const homeScreenCount = async (req, res) => {
       {
         $facet: {
           products: [{ $count: "total" }],
-          blogs: [
+          categories: [
             {
               $unionWith: {
-                coll: "blogs",
+                coll: "categories",
+                pipeline: [{ $count: "total" }],
+              },
+            },
+          ],
+          materials: [
+            {
+              $unionWith: {
+                coll: "materials",
                 pipeline: [{ $count: "total" }],
               },
             },
@@ -291,25 +299,26 @@ const homeScreenCount = async (req, res) => {
       },
       {
         $project: {
-          products: { $arrayElemAt: ["$products.total", 0] },
-          blogs: { $arrayElemAt: ["$blogs.total", 0] },
+          products: { $ifNull: [{ $arrayElemAt: ["$products.total", 0] }, 0] },
+          categories: { $ifNull: [{ $arrayElemAt: ["$categories.total", 0] }, 0] },
+          materials: { $ifNull: [{ $arrayElemAt: ["$materials.total", 0] }, 0] },
         },
       },
     ]);
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          counts[0] || { products: 0, blogs: 0 },
-          "Home screen counts fetched"
-        )
-      );
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        counts[0] || { products: 0, blogs: 0, categories: 0, materials: 0 },
+        "Home screen counts fetched"
+      )
+    );
   } catch (error) {
     console.error("HomeScreenCount Error:", error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
+
 
 module.exports = {
   createProduct,
