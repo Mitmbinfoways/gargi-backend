@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const AdminModel = require("../models/AdminUser.model");
 const ApiError = require("../utils/ApiError");
 const ApiResponse = require("../utils/ApiResponse");
-const sendMail = require("../utils/Nodemailer");
 const { generateToken } = require("../utils/generateToken");
 
 const JWT_SECRET = process.env.JWT_SECRET;

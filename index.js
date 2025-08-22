@@ -5,8 +5,10 @@ const cookieParser = require("cookie-parser");
 const connectDB = require("./db/connection");
 const AdminUserRoute = require("./routes/AdminUser.route");
 const ProductRoute = require("./routes/Product.route");
-const BlogRoutes = require("./routes/Blog.route");
 const ContactRoute = require("./routes/Contact.route");
+const CategoryRoute = require("./routes/Category.route")
+const MaterialRoute = require("./routes/Material.route")
+const SizeRoute = require("./routes/Size.route")
 
 dotenv.config();
 const app = express();
@@ -26,6 +28,9 @@ app.use(cookieParser());
 app.use("/api/v1/admin", AdminUserRoute);
 app.use("/api/v1/products", ProductRoute);
 app.use("/api/v1/contact" , ContactRoute)
+app.use("/api/v1/category" , CategoryRoute)
+app.use("/api/v1/material" , MaterialRoute)
+app.use("/api/v1/size" , SizeRoute)
 // app.use("/api/v1/blogs", BlogRoutes);
 // app.use("/api/v1/combo", ComboRoute);
 

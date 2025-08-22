@@ -83,4 +83,4 @@ const getAllQuarys = async (req, res) => {
   }
 };
 
-module.exports = { sendQuary, getAllQuarys };
+module.exports = { sendQuary, getAllQuarys }; 

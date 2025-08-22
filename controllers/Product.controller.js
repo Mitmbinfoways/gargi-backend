@@ -25,7 +25,30 @@ const createProduct = async (req, res) => {
       }
       return res
         .status(400)
-        .json(new ApiError(400, "Required fields are missing"));
+        .json(new ApiError(400, "Name, Category, Material, Quantity and Price are Required"));
+    }
+
+    const existingProduct = await ProductModel.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
+      category,
+      material,
+    });
+
+    if (existingProduct) {
+      if (req.files?.length > 0) {
+        req.files.forEach((file) => {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+      }
+
+      return res
+        .status(409)
+        .json(
+          new ApiError(
+            409,
+            "Product with this name, category, and material already exists"
+          )
+        );
     }
 
     let imageUrls = [];
@@ -38,7 +61,7 @@ const createProduct = async (req, res) => {
     }
 
     const newProduct = await ProductModel.create({
-      name,
+      name: name.trim(),
       category,
       material,
       size,
@@ -82,7 +105,7 @@ const getHomeScreenProducts = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;    
+    const { category, minPrice, maxPrice, name, material, isActive, page, limit } = req.query;
     let filter = {};
 
     if (category) filter.category = category;
@@ -145,6 +168,7 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
+
     const product = await ProductModel.findById(id);
     if (!product) {
       if (req.files?.length > 0) {
@@ -153,6 +177,43 @@ const updateProduct = async (req, res) => {
         });
       }
       return res.status(404).json(new ApiError(404, "Product not found"));
+    }
+
+    const {
+      name,
+      category,
+      material,
+      size,
+      quantityPerPack,
+      pricePerPack,
+      description,
+      isActive,
+    } = req.body;
+
+    if (name || category || material) {
+      const duplicateProduct = await ProductModel.findOne({
+        _id: { $ne: id },
+        name: { $regex: new RegExp(`^${(name || product.name).trim()}$`, "i") },
+        category: category || product.category,
+        material: material || product.material,
+      });
+
+      if (duplicateProduct) {
+        if (req.files?.length > 0) {
+          req.files.forEach((file) => {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          });
+        }
+
+        return res
+          .status(409)
+          .json(
+            new ApiError(
+              409,
+              "A product with this name, category, and material already exists"
+            )
+          );
+      }
     }
 
     let existingImages = [];
@@ -172,17 +233,6 @@ const updateProduct = async (req, res) => {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       }
     }
-
-    const {
-      name,
-      category,
-      material,
-      size,
-      quantityPerPack,
-      pricePerPack,
-      description,
-      isActive,
-    } = req.body;
 
     product.name = name ?? product.name;
     product.category = category ?? product.category;
@@ -212,6 +262,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
+
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -237,7 +288,7 @@ const homeScreenCount = async (req, res) => {
           blogs: [
             {
               $unionWith: {
-                coll: "blogs", // collection name in MongoDB (lowercase plural of Blog model)
+                coll: "blogs",
                 pipeline: [{ $count: "total" }],
               },
             },
