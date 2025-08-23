@@ -180,10 +180,18 @@ const updateProduct = async (req, res) => {
       material,
       size,
       quantityPerPack,
-      pricePerPack,
       description,
       isActive,
+      existingImages,
     } = req.body;
+
+    if (Object.keys(req.body).length === 1 && "isActive" in req.body) {
+      product.isActive = isActive === "true" || isActive === true;
+      const updatedProduct = await product.save();
+      return res
+        .status(200)
+        .json(new ApiResponse(200, updatedProduct, "Status updated successfully"));
+    }
 
     if (name || category || material) {
       const duplicateProduct = await ProductModel.findOne({
@@ -200,24 +208,22 @@ const updateProduct = async (req, res) => {
           });
         }
 
-        return res
-          .status(409)
-          .json(
-            new ApiError(
-              409,
-              "A product with this name, category, and material already exists"
-            )
-          );
+        return res.status(409).json(
+          new ApiError(
+            409,
+            "A product with this name, category, and material already exists"
+          )
+        );
       }
     }
 
-    let existingImages = [];
-    if (req.body.existingImages) {
-      if (typeof req.body.existingImages === "string") {
-        existingImages = [req.body.existingImages];
-      } else if (Array.isArray(req.body.existingImages)) {
-        existingImages = req.body.existingImages;
-      }
+    let existingImagesArray = [];
+    if (existingImages) {
+      existingImagesArray = Array.isArray(existingImages)
+        ? existingImages
+        : [existingImages];
+    } else {
+      existingImagesArray = product.image || [];
     }
 
     let newImageUrls = [];
@@ -234,11 +240,10 @@ const updateProduct = async (req, res) => {
     product.material = material ?? product.material;
     product.size = size ?? product.size;
     product.quantityPerPack = quantityPerPack ?? product.quantityPerPack;
-    // product.pricePerPack = pricePerPack ?? product.pricePerPack;
     product.description = description ?? product.description;
-    product.isActive = isActive ?? product.isActive;
-
-    product.image = [...existingImages, ...newImageUrls];
+    product.isActive =
+      isActive !== undefined ? isActive === "true" || isActive === true : product.isActive;
+    product.image = [...existingImagesArray, ...newImageUrls];
 
     const updatedProduct = await product.save();
 
@@ -252,7 +257,6 @@ const updateProduct = async (req, res) => {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       });
     }
-
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
@@ -318,7 +322,6 @@ const homeScreenCount = async (req, res) => {
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 };
-
 
 module.exports = {
   createProduct,
