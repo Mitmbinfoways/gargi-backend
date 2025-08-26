@@ -19,8 +19,6 @@ const ProductModel = new mongoose.Schema({
   },
   quantityPerPack: {
     type: Number,
-    required: true,
-    min: 1,
   },
   // pricePerPack: {
   //   type: Number,
