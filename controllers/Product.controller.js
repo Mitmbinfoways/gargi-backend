@@ -60,8 +60,6 @@ const createProduct = async (req, res) => {
       }
     }
 
-    console.log(quantityPerPack)
-
     const newProduct = await ProductModel.create({
       name: name.trim(),
       category,
