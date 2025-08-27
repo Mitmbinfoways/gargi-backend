@@ -93,12 +93,11 @@ const createProduct = async (req, res) => {
 
 const getHomeScreenProducts = async (req, res) => {
   try {
-    const products = await ProductModel.find().sort({ createdAt: -1 }).limit(8);
-
+    const products = await ProductModel.aggregate([{ $sample: { size: 8 } }]);
     return res
       .status(200)
       .json(
-        new ApiResponse(200, products, "Latest home screen products fetched")
+        new ApiResponse(200, products, "Home screen products fetched")
       );
   } catch (error) {
     console.error("GetHomeScreenProducts Error:", error);
