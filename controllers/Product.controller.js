@@ -25,7 +25,12 @@ const createProduct = async (req, res) => {
       }
       return res
         .status(400)
-        .json(new ApiError(400, "Name, Category, Material and Quantity are Required"));
+        .json(
+          new ApiError(
+            400,
+            "Name, Category, Material and Quantity are Required"
+          )
+        );
     }
 
     const existingProduct = await ProductModel.findOne({
@@ -113,29 +118,55 @@ const getAllProducts = async (req, res) => {
     if (isActive !== undefined) filter.isActive = isActive === "true";
     if (name) filter.name = { $regex: name, $options: "i" };
 
-    // Pagination setup
-    const pageNumber = Number(page) || 1;
-    const pageSize = Number(limit) || 10;
-    const skip = (pageNumber - 1) * pageSize;
+    let products;
+    let totalProducts = await ProductModel.countDocuments(filter);
 
-    // If no filter is applied, filter remains empty, which fetches all products
-    const totalProducts = await ProductModel.countDocuments(filter);
-    const products = await ProductModel.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize);
+    if (limit) {
+      // Pagination when limit is provided
+      const pageNumber = Number(page) || 1;
+      const pageSize = Number(limit);
+      const skip = (pageNumber - 1) * pageSize;
 
-    return res.status(200).json(
-      new ApiResponse(200, {
-        products,
-        pagination: {
-          total: totalProducts,
-          page: pageNumber,
-          limit: pageSize,
-          totalPages: Math.ceil(totalProducts / pageSize),
-        },
-      }, "Products fetched successfully")
-    );
+      products = await ProductModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            products,
+            pagination: {
+              total: totalProducts,
+              page: pageNumber,
+              limit: pageSize,
+              totalPages: Math.ceil(totalProducts / pageSize),
+            },
+          },
+          "Products fetched successfully"
+        )
+      );
+    } else {
+      // If no limit → fetch all products without pagination
+      products = await ProductModel.find(filter).sort({ createdAt: -1 });
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            products,
+            pagination: {
+              total: totalProducts,
+              page: 1,
+              limit: totalProducts,
+              totalPages: 1,
+            },
+          },
+          "Products fetched successfully"
+        )
+      );
+    }
   } catch (error) {
     console.error("GetAllProducts Error:", error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
@@ -190,7 +221,9 @@ const updateProduct = async (req, res) => {
       const updatedProduct = await product.save();
       return res
         .status(200)
-        .json(new ApiResponse(200, updatedProduct, "Status updated successfully"));
+        .json(
+          new ApiResponse(200, updatedProduct, "Status updated successfully")
+        );
     }
 
     if (name || category || material) {
@@ -208,12 +241,14 @@ const updateProduct = async (req, res) => {
           });
         }
 
-        return res.status(409).json(
-          new ApiError(
-            409,
-            "A product with this name, category, and material already exists"
-          )
-        );
+        return res
+          .status(409)
+          .json(
+            new ApiError(
+              409,
+              "A product with this name, category, and material already exists"
+            )
+          );
       }
     }
 
@@ -242,14 +277,18 @@ const updateProduct = async (req, res) => {
     product.quantityPerPack = quantityPerPack ?? product.quantityPerPack;
     product.description = description ?? product.description;
     product.isActive =
-      isActive !== undefined ? isActive === "true" || isActive === true : product.isActive;
+      isActive !== undefined
+        ? isActive === "true" || isActive === true
+        : product.isActive;
     product.image = [...existingImagesArray, ...newImageUrls];
 
     const updatedProduct = await product.save();
 
     return res
       .status(200)
-      .json(new ApiResponse(200, updatedProduct, "Product updated successfully"));
+      .json(
+        new ApiResponse(200, updatedProduct, "Product updated successfully")
+      );
   } catch (error) {
     console.error("UpdateProduct Error:", error);
     if (req.files?.length > 0) {
@@ -304,19 +343,25 @@ const homeScreenCount = async (req, res) => {
       {
         $project: {
           products: { $ifNull: [{ $arrayElemAt: ["$products.total", 0] }, 0] },
-          categories: { $ifNull: [{ $arrayElemAt: ["$categories.total", 0] }, 0] },
-          materials: { $ifNull: [{ $arrayElemAt: ["$materials.total", 0] }, 0] },
+          categories: {
+            $ifNull: [{ $arrayElemAt: ["$categories.total", 0] }, 0],
+          },
+          materials: {
+            $ifNull: [{ $arrayElemAt: ["$materials.total", 0] }, 0],
+          },
         },
       },
     ]);
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        counts[0] || { products: 0, blogs: 0, categories: 0, materials: 0 },
-        "Home screen counts fetched"
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          counts[0] || { products: 0, blogs: 0, categories: 0, materials: 0 },
+          "Home screen counts fetched"
+        )
+      );
   } catch (error) {
     console.error("HomeScreenCount Error:", error);
     return res.status(500).json(new ApiError(500, "Internal Server Error"));
