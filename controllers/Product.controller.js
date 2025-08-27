@@ -213,8 +213,6 @@ const updateProduct = async (req, res) => {
       isActive,
     } = req.body;
 
-    console.log(req.body);
-
     const bodyKeys = Object.keys(req.body);
     const isOnlyIsActive =
       bodyKeys.length === 1 && bodyKeys.includes("isActive");
