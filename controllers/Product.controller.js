@@ -93,9 +93,7 @@ const createProduct = async (req, res) => {
 
 const getHomeScreenProducts = async (req, res) => {
   try {
-    const products = await ProductModel.find()
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const products = await ProductModel.find().sort({ createdAt: -1 }).limit(8);
 
     return res
       .status(200)
@@ -213,16 +211,27 @@ const updateProduct = async (req, res) => {
       quantityPerPack,
       description,
       isActive,
-      existingImages,
     } = req.body;
 
-    if (Object.keys(req.body).length === 1 && "isActive" in req.body) {
-      product.isActive = isActive === "true" || isActive === true;
+    console.log(req.body);
+
+    const bodyKeys = Object.keys(req.body);
+    const isOnlyIsActive =
+      bodyKeys.length === 1 && bodyKeys.includes("isActive");
+
+    if (isOnlyIsActive) {
+      product.isActive =
+        isActive === "true" || isActive === true ? true : false;
+
       const updatedProduct = await product.save();
       return res
         .status(200)
         .json(
-          new ApiResponse(200, updatedProduct, "Status updated successfully")
+          new ApiResponse(
+            200,
+            updatedProduct,
+            "Product status updated successfully"
+          )
         );
     }
 
@@ -240,7 +249,6 @@ const updateProduct = async (req, res) => {
             if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
           });
         }
-
         return res
           .status(409)
           .json(
@@ -252,13 +260,13 @@ const updateProduct = async (req, res) => {
       }
     }
 
-    let existingImagesArray = [];
-    if (existingImages) {
-      existingImagesArray = Array.isArray(existingImages)
-        ? existingImages
-        : [existingImages];
-    } else {
-      existingImagesArray = product.image || [];
+    let existingImages = [];
+    if (req.body.existingImages) {
+      if (typeof req.body.existingImages === "string") {
+        existingImages = [req.body.existingImages];
+      } else if (Array.isArray(req.body.existingImages)) {
+        existingImages = req.body.existingImages;
+      }
     }
 
     let newImageUrls = [];
@@ -280,10 +288,9 @@ const updateProduct = async (req, res) => {
       isActive !== undefined
         ? isActive === "true" || isActive === true
         : product.isActive;
-    product.image = [...existingImagesArray, ...newImageUrls];
+    product.image = [...existingImages, ...newImageUrls];
 
     const updatedProduct = await product.save();
-
     return res
       .status(200)
       .json(

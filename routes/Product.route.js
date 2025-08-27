@@ -16,7 +16,7 @@ router.post("/", authMiddleware, Upload.array("images"), createProduct);
 router.get("/home", getHomeScreenProducts);
 router.get("/", getAllProducts);
 router.get("/:id", getProductById);
-router.patch("/:id", authMiddleware, Upload.array("images"), updateProduct);
+router.put("/:id", authMiddleware, Upload.array("images"), updateProduct);
 router.get("/dashboard/counts", authMiddleware, homeScreenCount);
 router.delete("/:id", authMiddleware, deleteProduct);
 
